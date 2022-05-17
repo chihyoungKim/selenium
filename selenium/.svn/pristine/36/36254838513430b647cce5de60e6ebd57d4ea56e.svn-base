@@ -1,0 +1,16 @@
+package selenium;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class Test {
+	public static void main(String[] args) {
+
+		String time = "https://rev-static.yogiyo.co.kr/25ab5bf9e468fc380f5fb0fdd9eba76d_tn.jpg";
+		
+		String result = time.substring(6);
+		System.out.println(result);
+//		String result = 
+		
+	}
+}

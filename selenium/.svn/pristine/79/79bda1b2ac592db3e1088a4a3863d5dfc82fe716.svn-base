@@ -1,0 +1,14 @@
+package selenium;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class Test {
+	public static void main(String[] args) {
+
+		double sum = 4.0;
+		int num = 3;
+		System.out.println((int)(sum/num * 10) / 10d);
+		
+	}
+}

@@ -1,0 +1,368 @@
+package selenium;
+
+import java.sql.PreparedStatement;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+
+import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+
+public class SeleniumMine {
+	private WebDriver driver;
+	
+	public static final String WEB_DRIVER_ID = "webdriver.chrome.driver";
+	public static final String WEB_DRIVER_RATH = "D:/devtools/chromdriver_win32/chromedriver.exe"; // academy
+	
+//	public static final String WEB_DRIVER_RATH = "E:/devtools/chromedriver/chromedriver.exe"; // home
+	
+	private String base_url;
+	
+	public SeleniumMine() {
+		System.setProperty(WEB_DRIVER_ID, WEB_DRIVER_RATH);
+		
+		driver = new ChromeDriver();
+		base_url = "https://www.yogiyo.co.kr/mobile/?gclid=EAIaIQobChMIgbuUjoev9wIVT1lgCh0LhQl4EAAYASAAEgLaG_D_BwE#/";
+	}
+	
+	public void crawl() throws Exception {
+		driver.get(base_url);
+//		System.out.println(driver.getPageSource());
+		driver.findElement(By.name("address_input")).click();
+//		new Actions(driver).pause(1000);
+		Thread.sleep(2000);
+		driver.findElement(By.linkText("현재 위치로 설정합니다.")).click();
+		Thread.sleep(2000);
+		
+		
+		WebElement clsContent = driver.findElement(By.id("content")).findElements(By.cssSelector(".content > div")).get(3);
+		List<WebElement> infos = clsContent.findElements(By.cssSelector(".restaurant-list > div table .restaurants-info"));
+		
+		if(infos.size() < 70) {
+			JavascriptExecutor executor = (JavascriptExecutor) driver;
+			executor.executeScript("window.scrollBy(0,10240)", "");
+			Thread.sleep(2000);
+			infos = clsContent.findElements(By.cssSelector(".restaurant-list > div table .restaurants-info"));
+		}
+
+		
+//		System.out.println(driver.getPageSource());
+//		driver.findElement(By.id("content")).findElements(By.cssSelector(".content")).get(0);
+		
+		for(WebElement el : infos) {
+			System.out.println(el.getText());
+		}
+		
+		// 총 가게 몇개고
+		System.out.println(infos.size());
+//		name = "address_input"
+	}
+	
+	public void crawl2(int c) throws Exception {
+		driver.get(base_url);
+		
+		// 3~14까지 있음 1은 할인정보고 2는 전체보기로 되어있다.
+		driver.findElement(By.cssSelector(".category-list > div.row > div:nth-child(" + c + ")")).click();
+		Thread.sleep(1000);
+		
+		
+		WebElement clsContent = driver.findElement(By.id("content")).findElements(By.cssSelector(".content > div")).get(3);
+		List<WebElement> infos = clsContent.findElements(By.cssSelector(".restaurant-list > div table .restaurants-info"));
+		
+		if(infos.size() < 70) {
+			JavascriptExecutor executor = (JavascriptExecutor) driver;
+			executor.executeScript("window.scrollBy(0,10240)", "");
+			Thread.sleep(2000);
+			infos = clsContent.findElements(By.cssSelector(".restaurant-list > div table .restaurants-info"));
+		}
+
+		int cnt = 0;
+		
+		for(int i = 1 ; cnt < 70 ; i++) {
+			System.out.println(infos.get(i).getText());
+			cnt++;
+		}
+		System.out.println(cnt);
+		driver.close();
+		
+	}
+	public void crawl3(int category, int storeNum) throws Exception { // 가게상세정보
+		
+		Map<String, String> menu = new HashMap<String, String>();
+		Map<String, String> Store = new HashMap<String, String>();
+		
+		String sno = category + "" + storeNum; // sno
+		
+		driver.get(base_url);
+		Thread.sleep(2000);
+
+		driver.findElement(By.cssSelector(".category-list > div.row > div:nth-child(" + category + ")")).click();
+		Thread.sleep(2000);
+		
+		JavascriptExecutor executor = (JavascriptExecutor) driver;
+		executor.executeScript("window.scrollBy(0,5000)", "");
+		Thread.sleep(2000);
+		executor.executeScript("window.scrollBy(0,-5000)", "");
+		Thread.sleep(2000);
+
+		WebElement clsContent = driver.findElement(By.id("content")).findElements(By.cssSelector(".content > div")).get(3);
+		
+		Thread.sleep(2000);
+		WebElement clsContent2 = clsContent.findElements(By.cssSelector(".restaurant-list > div")).get(storeNum);
+		clsContent2.findElement(By.tagName("div")).click();
+		Thread.sleep(2000);
+		
+		String storeName = driver.findElement(By.cssSelector(".restaurant-name")).getText(); // 가게이름
+		String storeStar = driver.findElement(By.cssSelector(".stars")).getText().substring(6); // 별점
+		String storeTime = driver.findElement(By.cssSelector(".delivery-time-tooltip span")).getText().substring(0, 2); // 배달시간
+		
+		String minPrice = driver.findElement(By.cssSelector(".discount-desc + li span")).getText(); // 최소주문금액
+		while(minPrice.contains(",")) {
+			int a = minPrice.indexOf(",");
+			String result = minPrice.substring(0, a);
+			String result2 = minPrice.substring(a+1);
+			minPrice = result.concat(result2);
+		}
+		while(minPrice.contains("원")) {
+			int a = minPrice.indexOf("원");
+			String result = minPrice.substring(0, a);
+			String result2 = minPrice.substring(a+1);
+			minPrice = result.concat(result2);
+		}
+		
+		// 별도 배달요금
+		String delPrice = driver.findElement(By.cssSelector(".restaurant-cart [ng-show='cart.get_delivery_fee(restaurant) > 0']")).getText();
+		if(delPrice.length() > 3) {
+			delPrice = delPrice.substring(5);
+		}
+		while(delPrice.contains(",")) {
+			int a = delPrice.indexOf(",");
+			String result = delPrice.substring(0, a);
+			String result2 = delPrice.substring(a+1);
+			delPrice = result.concat(result2);
+		}
+		if(delPrice.contains("원")) {
+			int a = delPrice.indexOf("원");
+			delPrice = delPrice.substring(0, a);
+		}
+		
+		int k = driver.findElement(By.id("menu")).findElements(By.cssSelector(".panel-group > .panel")).size();
+		for(int i = 2 ; i < k-1 ; i++) {
+			WebElement clsContent3 = driver.findElement(By.id("menu")).findElements(By.cssSelector(".panel-group > .panel")).get(i);
+			if(i >= 2) {clsContent3.findElement(By.cssSelector(".panel-heading")).click();}
+			int l = clsContent3.findElements(By.cssSelector("ul.sub-list > li")).size();
+			for(int j = 0 ; j < l ; j++) {
+				WebElement clscontent4 = clsContent3.findElements(By.cssSelector("ul.sub-list > li")).get(j);
+				menu.put("name", clscontent4.findElement(By.cssSelector("table .menu-name")).getText());
+				menu.put("desc", clscontent4.findElement(By.cssSelector("table .menu-desc")).getText());
+				menu.put("price", clscontent4.findElement(By.cssSelector("table .menu-price")).getText());
+				List<WebElement> list = clscontent4.findElements(By.cssSelector("table .menu-name, table .menu-desc, table .menu-price"));
+				
+				
+				String imgUrl = clscontent4.findElement(By.cssSelector(".photo")).getAttribute("style");
+				
+				
+				
+				imgUrl = imgUrl.substring(23, imgUrl.lastIndexOf(",") - 2);
+				menu.put("imgUrl", imgUrl);
+				saveDBMenu(menu);
+				
+			}
+		}
+		
+		// 가게 상세정보
+		driver.findElement(By.linkText("정보")).click();
+		Thread.sleep(2000);
+		
+		WebElement infomation = driver.findElement(By.id("info"));
+		
+		List<WebElement> infoList = infomation.findElements(By.cssSelector(".info-item"));
+		
+		// 사장님알림, 업체정보, 결제정보, 사업자정보, 원산지정보
+		String boss = infoList.get(0).findElement(By.cssSelector("[ng-bind-html='introduction_text()|strip_html']")).getText(); // 사장님 알림
+		String time = infoList.get(1).findElement(By.cssSelector("span")).getText(); // 영업시간
+		String num = infoList.get(1).findElement(By.cssSelector("[ng-show='restaurant.phone.length > 0'] span")).getText(); // 매장번호
+		String address = infoList.get(1).findElement(By.cssSelector("[ng-show='restaurant.address.length > 0'] span")).getText(); // 주소
+		
+		String companyName = infoList.get(3).findElement(By.cssSelector("span")).getText(); // 상호명
+		String companyNum = infoList.get(3).findElement(By.cssSelector("[ng-bind='restaurant_info.crmdata.company_number']")).getText(); // 사업자등록번호
+		
+		String infoFood = infoList.get(4).findElement(By.cssSelector("pre")).getText(); // 원산지정보
+		
+//		driver.close();
+	}
+	public void getReview(int category, int storeNum) throws Exception {
+		
+		driver.get(base_url);
+		Thread.sleep(2000);
+		
+		driver.findElement(By.cssSelector(".category-list > div.row > div:nth-child(" + category + ")")).click();
+		Thread.sleep(2000);
+		
+		JavascriptExecutor executor = (JavascriptExecutor) driver;
+		executor.executeScript("window.scrollBy(0,5000)", "");
+		Thread.sleep(2000);
+		executor.executeScript("window.scrollBy(0,-5000)", "");
+		Thread.sleep(2000);
+		
+		WebElement clsContent = driver.findElement(By.id("content")).findElements(By.cssSelector(".content > div")).get(3);
+		
+		Thread.sleep(2000);
+		WebElement clsContent2 = clsContent.findElements(By.cssSelector(".restaurant-list > div")).get(storeNum);
+		clsContent2.findElement(By.tagName("div")).click();
+		Thread.sleep(2000);
+		
+		List<String> list2 = new ArrayList<String>();
+		
+		Thread.sleep(2000);
+		driver.findElements(By.cssSelector(".restaurant-tab li")).get(1).click(); // 리뷰진입
+		Thread.sleep(2000);
+		
+		driver.findElement(By.cssSelector("label[for='cmn-toggle']")).click(); // 사진 있는 리뷰만 보이게
+		Thread.sleep(2000);
+		
+		
+//		String reviewNum = driver.findElements(By.cssSelector(".review-count strong")).get(0).getText();
+//		System.out.println(reviewNum); // 리뷰 총 개수
+		
+		WebElement reviewInfo = driver.findElement(By.id("review"));
+		List<WebElement> reviewList = reviewInfo.findElements(By.cssSelector("li.star-point"));
+		for(int i = 0; i < reviewList.size() ; i++) {
+			String reviewer = reviewList.get(i).findElement(By.cssSelector("[ng-show='review.phone']")).getText();
+			
+			String img = reviewList.get(i).findElement(By.cssSelector("img")).getAttribute("src");
+			
+			String comment = reviewList.get(i).findElement(By.cssSelector("[ng-show='review.comment']")).getText();
+			List<WebElement> points =  reviewList.get(i).findElements(By.cssSelector(".points"));
+			double sum = 0;
+			for(WebElement el : points) {
+				sum += Double.parseDouble(el.getText());
+			}
+			String point = ((int)(sum / points.size() * 10) / 10d) + "";
+			System.out.println(reviewer);
+			System.out.println(comment);
+			System.out.println(img);
+			System.out.println(point);
+		}
+		
+//		driver.close();
+	}
+	public void getStoreInfo(int category, int storeNum) throws Exception {
+		
+		Map<String, String> Store = new HashMap<String, String>();
+		
+		driver.get(base_url);
+		Thread.sleep(2000);
+
+		driver.findElement(By.cssSelector(".category-list > div.row > div:nth-child(" + category + ")")).click();
+		Thread.sleep(2000);
+		
+		JavascriptExecutor executor = (JavascriptExecutor) driver;
+		executor.executeScript("window.scrollBy(0,5000)", "");
+		Thread.sleep(2000);
+		executor.executeScript("window.scrollBy(0,-5000)", "");
+		Thread.sleep(2000);
+
+		WebElement clsContent = driver.findElement(By.id("content")).findElements(By.cssSelector(".content > div")).get(3);
+		
+		Thread.sleep(2000);
+		WebElement clsContent2 = clsContent.findElements(By.cssSelector(".restaurant-list > div")).get(storeNum);
+		clsContent2.findElement(By.tagName("div")).click();
+		Thread.sleep(2000);
+		
+		String storeName = driver.findElement(By.cssSelector(".restaurant-name")).getText(); // 가게이름
+		String storeStar = driver.findElement(By.cssSelector(".stars")).getText().substring(6); // 별점
+		String storeTime = driver.findElement(By.cssSelector(".delivery-time-tooltip span")).getText().substring(0, 2); // 배달시간
+		
+		String minPrice = driver.findElement(By.cssSelector(".discount-desc + li span")).getText(); // 최소주문금액
+		while(minPrice.contains(",")) {
+			int a = minPrice.indexOf(",");
+			String result = minPrice.substring(0, a);
+			String result2 = minPrice.substring(a+1);
+			minPrice = result.concat(result2);
+		}
+		while(minPrice.contains("원")) {
+			int a = minPrice.indexOf("원");
+			String result = minPrice.substring(0, a);
+			String result2 = minPrice.substring(a+1);
+			minPrice = result.concat(result2);
+		}
+		
+		// 별도 배달요금
+		String delPrice = driver.findElement(By.cssSelector(".restaurant-cart [ng-show='cart.get_delivery_fee(restaurant) > 0']")).getText();
+		if(delPrice.length() > 3) {
+			delPrice = delPrice.substring(5);
+		}
+		while(delPrice.contains(",")) {
+			int a = delPrice.indexOf(",");
+			String result = delPrice.substring(0, a);
+			String result2 = delPrice.substring(a+1);
+			delPrice = result.concat(result2);
+		}
+		if(delPrice.contains("원")) {
+			int a = delPrice.indexOf("원");
+			delPrice = delPrice.substring(0, a);
+		}
+		
+		// 가게 상세정보
+		driver.findElement(By.linkText("정보")).click();
+		Thread.sleep(2000);
+		
+		WebElement infomation = driver.findElement(By.id("info"));
+		
+		List<WebElement> infoList = infomation.findElements(By.cssSelector(".info-item"));
+		
+		// 사장님알림, 업체정보, 결제정보, 사업자정보, 원산지정보, 위반사항인데 이건무쓸모
+		String boss = infoList.get(0).findElement(By.cssSelector("[ng-bind-html='introduction_text()|strip_html']")).getText(); // 사장님 알림
+		String time = infoList.get(1).findElement(By.cssSelector("span")).getText(); // 영업시간
+		String num = infoList.get(1).findElement(By.cssSelector("[ng-show='restaurant.phone.length > 0'] span")).getText(); // 매장번호
+		String address = infoList.get(1).findElement(By.cssSelector("[ng-show='restaurant.address.length > 0'] span")).getText(); // 주소
+		
+		String companyName = infoList.get(3).findElement(By.cssSelector("span")).getText(); // 상호명
+		String companyNum = infoList.get(3).findElement(By.cssSelector("[ng-bind='restaurant_info.crmdata.company_number']")).getText(); // 사업자등록번호
+		
+		String infoFood = infoList.get(4).findElement(By.cssSelector("pre")).getText(); // 원산지정보
+		
+		
+//		driver.close();
+	}
+	
+	
+	public static void main(String[] args) throws Exception {
+		
+		new SeleniumMine().crawl3(4, 5);
+//		new SeleniumMine().getStoreInfo(3, 2);
+		
+		
+	}
+
+	static void saveDBMenu(Map<String, String> map) throws Exception {
+		PreparedStatement pstmt = DBConn.getConnection().prepareStatement(
+				"INSERT INTO TEST_MENU VALUES(?, ?, ?, ?)");
+		pstmt.setString(1, map.get("name"));
+		pstmt.setString(2, map.get("desc"));
+		pstmt.setString(3, map.get("price"));
+		pstmt.setString(4, map.get("imgUrl"));
+		
+		pstmt.executeUpdate();
+		pstmt.close();
+		DBConn.getConnection().close();
+	}
+	static void saveDBStore(Map<String, String> map) throws Exception {
+		PreparedStatement pstmt = DBConn.getConnection().prepareStatement(
+				"INSERT INTO TEST_MENU VALUES(?, ?, ?, ?)");
+		pstmt.setString(1, map.get("name"));
+		pstmt.setString(2, map.get("desc"));
+		pstmt.setString(3, map.get("price"));
+		pstmt.setString(4, map.get("imgUrl"));
+		
+		pstmt.executeUpdate();
+		pstmt.close();
+		DBConn.getConnection().close();
+	}
+}

@@ -1,0 +1,26 @@
+package selenium;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class Test {
+	public static void main(String[] args) {
+		String delPrice = "배달요금 2,000원 별도 (50,000원 이상 주문시 배달무료)";
+		
+		delPrice = delPrice.substring(5);
+		
+		while(delPrice.contains(",")) {
+			int a = delPrice.indexOf(",");
+			String result = delPrice.substring(0, a);
+			String result2 = delPrice.substring(a+1);
+			delPrice = result.concat(result2);
+		}
+		if(delPrice.contains("원")) {
+			int a = delPrice.indexOf("원");
+			delPrice = delPrice.substring(0, a);
+		}
+		
+		System.out.println(delPrice);
+		
+	}
+}
